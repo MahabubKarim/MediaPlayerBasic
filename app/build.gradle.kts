@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -17,6 +18,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // buildConfigField ("String", "JAMENDO_CLIENT_ID", "${properties["JAMENDO_API_KEY"]}")
+        buildConfigField ("String", "JAMENDO_CLIENT_ID", "\"e254815f\"")
     }
 
     buildTypes {
@@ -28,15 +32,19 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
+
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -79,4 +87,34 @@ dependencies {
 
     // System UI Controller
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
+
+    // Room Database
+    implementation("androidx.room:room-runtime:2.7.1")
+    implementation("androidx.room:room-ktx:2.7.1")
+    ksp("androidx.room:room-compiler:2.7.1")
+
+    // Retrofit with Gson
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+
+    // WorkManager for periodic sync
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // Hilt Core (updated for KSP)
+    implementation("com.google.dagger:hilt-android:2.51")
+    ksp("com.google.dagger:hilt-android-compiler:2.51")
+
+    // Hilt for WorkManager (updated for KSP)
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    ksp("androidx.hilt:hilt-compiler:1.2.0")
+
+    // Hilt Navigation Compose
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    // Coil for image loading
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
+    // Lifecycle components
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
 }
