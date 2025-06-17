@@ -18,7 +18,7 @@ interface JamendoApiService {
 
     /*companion object {
         private const val BASE_URL = "https://api.jamendo.com/"
-
++
         fun create(): JamendoApiService {
             // Configure HTTP client
             val client = OkHttpClient.Builder()

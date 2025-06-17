@@ -84,14 +84,8 @@ fun PlayerScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         when {
-            !uiState.isLoading -> {
-                PlayerContent(
-                    uiState = uiState,
-                    onPlayPause = { viewModel.playPause() },
-                    onSkipNext = { viewModel.skipToNext() },
-                    onSkipPrevious = { viewModel.skipToPrevious() },
-                    onSeek = { position -> viewModel.seekTo(position) }
-                )
+            uiState.isLoading -> {
+                FullScreenLoading()
             }
 
             uiState.error != null -> {
@@ -101,9 +95,16 @@ fun PlayerScreen(
                 )
             }
 
-            uiState.isLoading -> {
-                FullScreenLoading()
+            else -> {
+                PlayerContent(
+                    uiState = uiState,
+                    onPlayPause = { viewModel.playPause() },
+                    onSkipNext = { viewModel.skipToNext() },
+                    onSkipPrevious = { viewModel.skipToPrevious() },
+                    onSeek = { position -> viewModel.seekTo(position) }
+                )
             }
+
         }
     }
 }
@@ -383,6 +384,7 @@ private fun PlayerControls(
 }
 
 // Extension for duration formatting
+@SuppressLint("DefaultLocale")
 fun Long.formatDuration(): String {
     val totalSeconds = this / 1000
     val minutes = totalSeconds / 60

@@ -77,7 +77,7 @@ class PlayerViewModel @Inject constructor(
                 initializeMediaController(context)
             } catch (e: Exception) {
                 _uiState.update { it.copy(
-                    isLoading = false,
+                    isLoading = true,
                     error = "Error loading tracks: ${e.localizedMessage}"
                 )}
             }
@@ -172,7 +172,7 @@ class PlayerViewModel @Inject constructor(
         progressUpdateJob = viewModelScope.launch {
             while (true) {
                 updateUiState()
-                delay(200)
+                delay(150)
             }
         }
     }

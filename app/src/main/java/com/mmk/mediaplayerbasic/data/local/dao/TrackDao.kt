@@ -12,6 +12,9 @@ interface TrackDao {
     @Query("SELECT * FROM tracks ORDER BY lastUpdated DESC")
     fun getAllTracks(): Flow<List<TrackEntity>>
 
+    @Query("SELECT * FROM tracks ORDER BY title ASC LIMIT :limit OFFSET :offset")
+    fun getPagedTracks(offset: Int, limit: Int): List<TrackEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(tracks: List<TrackEntity>)
 

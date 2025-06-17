@@ -87,6 +87,18 @@ class PlayerService : MediaSessionService() {
             .build()
     }
 
+    private fun MediaItem.toTrackEntity(): TrackEntity {
+        return TrackEntity(
+            id = mediaId,
+            title = mediaMetadata.title.toString(),
+            artist = mediaMetadata.artist.toString(),
+            imageUrl = mediaMetadata.artworkUri.toString(),
+            duration = 0,
+            audioUrl = "",
+            lastUpdated = 0
+        )
+    }
+
     override fun onDestroy() {
         serviceScope.coroutineContext.cancelChildren()
         mediaSession?.run {
