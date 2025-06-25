@@ -1,7 +1,6 @@
 package com.mmk.mediaplayerbasic.ui.screen.home
 
 import android.content.Context
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,7 +20,8 @@ import com.mmk.mediaplayerbasic.service.PlayerService
 import com.mmk.mediaplayerbasic.ui.screen.player.PlayerEvent
 import com.mmk.mediaplayerbasic.ui.screen.player.PlayerUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +43,8 @@ class HomeViewModel @Inject constructor(
     private var mediaController: MediaController? = null
 
     var currentTracks: List<TrackEntity> = emptyList()
+
+    var progressUpdateJob: Job? = null
 
     val tracks = Pager(
         config = PagingConfig(pageSize = 20),
@@ -66,22 +68,26 @@ class HomeViewModel @Inject constructor(
         // Check if we have data first
         viewModelScope.launch {
             try {
-                val hasData : PagingData<TrackEntity> = repository.getPagedTracks().first()
+                val hasData: PagingData<TrackEntity> = repository.getPagedTracks().first()
                 if (hasData == null) {
-                    _uiState.update { it.copy(
-                        isLoading = false,
-                        error = "No tracks available. Please check your connection."
-                    )}
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = "No tracks available. Please check your connection."
+                        )
+                    }
                     return@launch
                 }
                 /**/
                 // Only proceed if we have data
                 initializeMediaController(context)
             } catch (e: Exception) {
-                _uiState.update { it.copy(
-                    isLoading = true,
-                    error = "Error loading tracks: ${e.localizedMessage}"
-                )}
+                _uiState.update {
+                    it.copy(
+                        isLoading = true,
+                        error = "Error loading tracks: ${e.localizedMessage}"
+                    )
+                }
             }
         }
     }
@@ -103,16 +109,41 @@ class HomeViewModel @Inject constructor(
                         }
                         _uiState.update { it.copy(isLoading = false) }
                     } catch (e: Exception) {
-                        _uiState.update { it.copy(
-                            isLoading = false,
-                            error = "Failed to connect to player"
-                        )}
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = "Failed to connect to player"
+                            )
+                        }
                     }
                 },
                 MoreExecutors.directExecutor()
             )
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    fun startProgressUpdates() {
+        progressUpdateJob?.cancel()
+        progressUpdateJob = viewModelScope.launch {
+            while (true) {
+                updateUiState()
+                delay(150)
+            }
+        }
+    }
+
+    fun forceUpdateUiState() {
+        updateUiState()
+
+        // Additional handling based on player state if needed
+        mediaController?.let { it ->
+            if (it.isPlaying) {
+                startProgressUpdates()
+            } else {
+                progressUpdateJob?.cancel()
+            }
         }
     }
 
@@ -123,6 +154,7 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
     fun updateUiState() {
         mediaController?.let { controller ->
             _uiState.update {
@@ -138,34 +170,38 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-
     fun playTrack(track: TrackEntity) {
         viewModelScope.launch {
             try {
                 mediaController?.let { controller ->
-                    // Convert TrackEntity to MediaItem
-                    val mediaItem = MediaItem.Builder()
-                        .setMediaId(track.id)
-                        .setUri(track.audioUrl)
-                        .setMediaMetadata(
-                            MediaMetadata.Builder()
-                                .setTitle(track.title)
-                                .setArtist(track.artist)
-                                .setArtworkUri(track.imageUrl.toUri())
-                                .build()
-                        )
-                        .build()
-                    // Stop current playback and prepare new track
-                    controller.stop()
-                    controller.setMediaItem(mediaItem)
-                    controller.prepare()
-                    controller.play()
+                    val index = controller.mediaItemCount.takeIf { it > 0 }?.let {
+                        (0 until it).firstOrNull { i ->
+                            controller.getMediaItemAt(i).mediaId == track.id
+                        }
+                    }
+                    if (index != null) {
+                        controller.seekTo(index, 0L)
+                        controller.play()
+                    } else {
+                        val mediaItem = MediaItem.Builder()
+                            .setMediaId(track.id)
+                            .setUri(track.audioUrl)
+                            .setMediaMetadata(
+                                MediaMetadata.Builder()
+                                    .setTitle(track.title)
+                                    .setArtist(track.artist)
+                                    .setArtworkUri(track.imageUrl.toUri())
+                                    .build()
+                            )
+                            .build()
 
-                    // If you want to add to queue instead of replacing:
-                    // controller.addMediaItem(mediaItem)
+                        controller.addMediaItem(mediaItem)
+                        controller.prepare()
+                        controller.play()
+                        // println("Track not found in media item list")
+                    }
                 } ?: throw IllegalStateException("MediaController not initialized")
             } catch (e: Exception) {
-                // Handle error (e.g., show error message)
                 e.printStackTrace()
             }
         }

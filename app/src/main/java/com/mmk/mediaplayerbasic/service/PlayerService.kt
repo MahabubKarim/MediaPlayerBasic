@@ -30,7 +30,7 @@ class PlayerService : MediaSessionService() {
     @Inject
     lateinit var repository: TrackRepository
     private var mediaSession: MediaSession? = null
-    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    // private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     override fun onCreate() {
         super.onCreate()
@@ -55,7 +55,6 @@ class PlayerService : MediaSessionService() {
             }
         }
     }
-
 
     private fun initializePlayerWithTracks(tracks: List<TrackEntity>) {
         // Run on main thread as ExoPlayer needs main thread
@@ -100,7 +99,6 @@ class PlayerService : MediaSessionService() {
     }
 
     override fun onDestroy() {
-        serviceScope.coroutineContext.cancelChildren()
         mediaSession?.run {
             player.release()
             release()
@@ -108,7 +106,6 @@ class PlayerService : MediaSessionService() {
         }
         super.onDestroy()
     }
-
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
         return mediaSession

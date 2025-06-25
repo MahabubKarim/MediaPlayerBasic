@@ -19,6 +19,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.items
 import coil.compose.rememberAsyncImagePainter
 import com.mmk.mediaplayerbasic.data.local.entity.TrackEntity
+import com.mmk.mediaplayerbasic.ui.screen.player.PlayerEvent
 
 @Composable
 fun HomeScreen(
@@ -33,6 +34,18 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         viewModel.initialize(context)
+    }
+
+    // Handle player state updates from notifications/other sources
+    LaunchedEffect(viewModel) {
+        viewModel.playerEvents.collect { event ->
+            when (event) {
+                is PlayerEvent.StateUpdated -> {
+                    // Force update the UI state when we receive player events
+                    viewModel.forceUpdateUiState()
+                }
+            }
+        }
     }
 
     Box(
@@ -70,7 +83,6 @@ fun HomeScreen(
                                     )
                                 }
                             }
-
                             /*lazyPagingItems.apply {
                             when {
                                 loadState.refresh is LoadState.Loading -> {
